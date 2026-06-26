@@ -5,23 +5,35 @@
 
 ## 설치 방법
 
-Claude Code에서:
+### 데스크톱 앱 (Claude Code Desktop)
+채팅창에 `/plugin` 을 입력하면 안 돼요. **GUI로** 설치합니다:
+1. 메시지 입력창 옆 **`+` 버튼** → **Plugins**
+2. 마켓플레이스 추가에 `jieun994/zinis_claude_skills` 등록 → `wbs-generator` 설치
 
+GUI에서 마켓플레이스 추가가 안 보이면, `.claude/settings.json` 에 아래를 넣으세요:
+```json
+{
+  "extraKnownMarketplaces": {
+    "zinis_claude_skills": {
+      "source": { "source": "github", "repo": "jieun994/zinis_claude_skills" }
+    }
+  }
+}
 ```
-# 1) 마켓플레이스 등록 (처음 한 번만)
-/plugin marketplace add jieun994/zinis_claude_skills
 
-# 2) 원하는 스킬 설치
+### 터미널 (CLI)
+```
+/plugin marketplace add jieun994/zinis_claude_skills
 /plugin install wbs-generator@zinis_claude_skills
 ```
+(또는 `claude plugin marketplace add jieun994/zinis_claude_skills`)
 
 ## 업데이트 (최신 버전 받기)
 
-```
-/plugin marketplace update zinis_claude_skills
-```
+- 데스크톱: `+` → Plugins 에서 업데이트
+- 터미널: `/plugin marketplace update zinis_claude_skills`
 
-> 자동 업데이트는 없어요. 새 버전 안내를 받으면 위 명령을 한 번 실행하면 됩니다.
+> 자동 업데이트는 없어요. 새 버전 안내를 받으면 한 번 갱신하면 됩니다.
 
 ## 스킬 목록
 
