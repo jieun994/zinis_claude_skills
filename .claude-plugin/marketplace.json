@@ -1,13 +1,13 @@
 {
-  "name": "wbs-generator",
+  "name": "claude-skills",
   "owner": {
     "name": "신지은"
   },
-  "description": "WBS(작업분해구조) 자동 생성 Claude 스킬 마켓플레이스",
+  "description": "신지은의 Claude 스킬 모음 마켓플레이스",
   "plugins": [
     {
       "name": "wbs-generator",
-      "source": "./",
+      "source": "./skills/wbs-generator",
       "description": "프로젝트 WBS를 엑셀로 자동 생성 — 레벨별 작업·일정·간트차트·진척률·공휴일 자동",
       "author": {
         "name": "신지은"

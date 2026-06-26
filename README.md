@@ -1,51 +1,50 @@
-# wbs-generator
+# claude-skills
 
-프로젝트 **WBS(작업 분해 구조)를 엑셀로 자동 생성**하는 Claude 스킬 마켓플레이스입니다.
-
-대화로 프로젝트를 설명하면 작업을 단계별(L1~L3)로 나누고, 일정·담당자·간트차트·
-진척률·공휴일까지 채운 엑셀을 만들어 줍니다.
+신지은의 **Claude 스킬 모음** 마켓플레이스입니다. 마켓플레이스를 한 번만 등록하면
+필요한 스킬을 골라 설치할 수 있어요.
 
 ## 설치 방법
 
-Claude Code에서 아래를 실행하세요. (private 저장소라 **초대받은 계정으로 GitHub에
-로그인된 상태**여야 합니다)
+Claude Code에서:
 
 ```
-/plugin marketplace add jieun994/wbs-generator
-/plugin install wbs-generator@wbs-generator
-```
+# 1) 마켓플레이스 등록 (처음 한 번만)
+/plugin marketplace add jieun994/claude-skills
 
-설치 후 Claude에게 **"WBS 만들어줘"** 라고 하면 됩니다.
+# 2) 원하는 스킬 설치
+/plugin install wbs-generator@claude-skills
+```
 
 ## 업데이트 (최신 버전 받기)
 
-스킬이 업데이트되면 Claude Code에서 아래를 실행하세요.
-
 ```
-/plugin marketplace update wbs-generator
+/plugin marketplace update claude-skills
 ```
 
-> 자동 업데이트는 없어서, 새 버전 안내를 받으면 이 명령을 한 번 실행하면 됩니다.
-> (필요 시 `/plugin install wbs-generator@wbs-generator` 로 재설치)
+> 자동 업데이트는 없어요. 새 버전 안내를 받으면 위 명령을 한 번 실행하면 됩니다.
 
-## 들어있는 스킬
+## 스킬 목록
 
-| 스킬 | 설명 |
-|---|---|
-| **wbs-generator** | 프로젝트 WBS를 엑셀로 자동 생성 (레벨별 작업·일정·간트·진척률·공휴일) |
+| 스킬 | 설명 | 설치 명령 |
+|---|---|---|
+| **wbs-generator** | 프로젝트 WBS(작업분해구조)를 엑셀로 자동 생성 | `/plugin install wbs-generator@claude-skills` |
 
-자세한 사용법은 [skills/wbs-generator/README.md](skills/wbs-generator/README.md) 참고.
-
-## 필요 환경
-
-- Python 패키지: `pip install openpyxl holidays`
+각 스킬의 자세한 사용법은 해당 폴더의 README를 보세요.
+(예: [skills/wbs-generator/README.md](skills/wbs-generator/README.md))
 
 ## 폴더 구성
 
 ```
 .claude-plugin/
-  marketplace.json   ← 마켓플레이스 목록
-  plugin.json        ← 플러그인 정보
+  marketplace.json     ← 스킬 카탈로그 (여기에 스킬 등록)
 skills/
-  wbs-generator/     ← 실제 스킬 (SKILL.md · README.md · scripts · template · samples)
+  wbs-generator/       ← 각 스킬 (자체 .claude-plugin/plugin.json + SKILL.md 포함)
+  …                    ← 새 스킬은 폴더로 추가
 ```
+
+## 새 스킬 추가 방법 (관리자용)
+
+1. `skills/<새스킬>/` 폴더 추가 (SKILL.md + `.claude-plugin/plugin.json` 포함)
+2. `.claude-plugin/marketplace.json` 의 `plugins` 에 한 줄 등록
+   (`name`, `source: "./skills/<새스킬>"`)
+3. commit & push → 사용자는 `/plugin install <새스킬>@claude-skills` 로 설치
