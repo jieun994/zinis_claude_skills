@@ -196,6 +196,19 @@ def build(input_json, output_xlsx, template_xlsx):
         cv["D22"] = to_date(proj["author_date"]); cv["D22"].number_format = "yyyy-mm-dd"
     cv["D24"] = proj.get("version", "")
 
+    # 개정이력 시트 — 최초 작성 행
+    rev = wb["개정이력"]
+    rev["A4"] = proj.get("version", "")
+    if proj.get("author_date"):
+        rev["B4"] = to_date(proj["author_date"]); rev["B4"].number_format = "yyyy-mm-dd"
+    rev["C4"] = proj.get("author", "")
+    rev["D4"] = "최초 작성"
+    for c in range(1, 5):
+        cell = rev.cell(row=4, column=c)
+        cell.border = BORDER
+        cell.font = Font(name=FONT, size=10)
+        cell.alignment = Alignment(horizontal="left" if c == 4 else "center", vertical="center")
+
     # 공휴일 시트 (간트/진행일이 공휴일!$A:$A 참조)
     hd = wb["공휴일"]
     for r in range(2, 120):

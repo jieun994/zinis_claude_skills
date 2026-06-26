@@ -64,7 +64,7 @@ def build_guide_sheet(wb):
         ("title", "WBS 사용 안내"),
         ("blank", ""),
         ("h", "이 파일은?"),
-        ("b", "프로젝트 작업분해구조(WBS)입니다. 시트 구성: 표지 · 사용안내 · 요약 · WBS · 공휴일"),
+        ("b", "프로젝트 작업분해구조(WBS)입니다. 시트 구성: 표지 · 사용안내 · 개정이력 · 요약 · WBS · 공휴일"),
         ("blank", ""),
         ("h", "내가 직접 넣는 것 — 말단(L3) 작업"),
         ("b", "시작일 · 종료일 · 진척율(%) · 상태   ← 이 4가지만 입력하면 됩니다"),
@@ -305,11 +305,27 @@ def build_template(src, out):
     for c, w in {1: 16, 2: 26, 3: 12, 4: 10, 5: 10}.items():
         sm.column_dimensions[get_column_letter(c)].width = w
 
+    # ---------- 개정이력 시트 (헤더만; build_wbs가 최초 행 채움) ----------
+    if "개정이력" in wb.sheetnames:
+        del wb["개정이력"]
+    rev = wb.create_sheet("개정이력")
+    rev.sheet_view.showGridLines = False
+    rev["A1"] = "개정이력"
+    rev["A1"].font = Font(name=FONT, size=16, bold=True)
+    for c, t in {1: "버전", 2: "날짜", 3: "작성자", 4: "변경 내용"}.items():
+        cell = rev.cell(row=3, column=c, value=t)
+        cell.font = Font(name=FONT, size=10, bold=True, color="FFFFFFFF")
+        cell.fill = fill("FF000000")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = BORDER
+    for c, w in {1: 10, 2: 14, 3: 12, 4: 55}.items():
+        rev.column_dimensions[get_column_letter(c)].width = w
+
     # 사용안내(온보딩) 시트 추가
     build_guide_sheet(wb)
 
-    # 시트 순서: 표지 · 사용안내 · 요약 · WBS · 공휴일
-    order = {"표지": 0, "사용안내": 1, "요약": 2, "WBS": 3, "공휴일": 4}
+    # 시트 순서: 표지 · 사용안내 · 개정이력 · 요약 · WBS · 공휴일
+    order = {"표지": 0, "사용안내": 1, "개정이력": 2, "요약": 3, "WBS": 4, "공휴일": 5}
     wb._sheets.sort(key=lambda s: order.get(s.title, 99))
     wb.active = 0
     wb.save(out)
