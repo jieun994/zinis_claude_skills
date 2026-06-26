@@ -12,6 +12,14 @@
       "author": {
         "name": "신지은"
       }
+    },
+    {
+      "name": "ia-builder",
+      "source": "./skills/ia-builder",
+      "description": "서비스 메뉴 구조(사이트맵/IA)와 기능정의서를 엑셀로 자동 생성 — Front/Admin 분리·역할별 CRUD 권한·개발구분 지원",
+      "author": {
+        "name": "신지은"
+      }
     }
   ]
 }
