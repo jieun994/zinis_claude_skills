@@ -47,6 +47,20 @@
 /plugin install wbs-generator@zinis_claude_skills
 ```
 
+### 📁 마켓플레이스 없이 — 스킬 폴더 직접 복사 (가장 간단)
+
+GitHub·마켓플레이스 없이, **`skills/wbs-generator` 폴더만** 받아서 넣으면 돼요.
+
+1. 이 저장소에서 **`skills/wbs-generator`** 폴더를 받기 (다운로드 또는 zip)
+2. 아래 위치에 폴더째로 넣기:
+   - 모든 프로젝트에서 쓰려면 → `~/.claude/skills/wbs-generator/`
+     (Windows: `C:\Users\<내계정>\.claude\skills\wbs-generator\`)
+   - 특정 프로젝트에서만 → 그 프로젝트의 `.claude/skills/wbs-generator/`
+3. Claude Code 재시작 → "WBS 만들어줘" 작동
+
+> 가장 쉬운 대신, **업데이트는 폴더를 다시 받아 덮어써야** 해요(자동 아님).
+> 여러 명이 계속 최신을 받아야 하면 위의 **마켓플레이스 방식**이 편합니다.
+
 ### 설치 후
 
 Claude에게 **"WBS 만들어줘"** 라고 하면 스킬이 작동합니다. 🎉
