@@ -64,7 +64,7 @@ def build_guide_sheet(wb):
         ("title", "WBS 사용 안내"),
         ("blank", ""),
         ("h", "이 파일은?"),
-        ("b", "프로젝트 작업분해구조(WBS)입니다. 시트 구성: 표지 · WBS · 공휴일 · 사용안내"),
+        ("b", "프로젝트 작업분해구조(WBS)입니다. 시트 구성: 표지 · 사용안내 · 요약 · WBS · 공휴일"),
         ("blank", ""),
         ("h", "내가 직접 넣는 것 — 말단(L3) 작업"),
         ("b", "시작일 · 종료일 · 진척율(%) · 상태   ← 이 4가지만 입력하면 됩니다"),
@@ -289,11 +289,27 @@ def build_template(src, out):
     hd.column_dimensions["B"].width = 24
     hd.sheet_view.showGridLines = False
 
+    # ---------- 요약 시트 (헤더만; build_wbs가 단계별 데이터 채움) ----------
+    if "요약" in wb.sheetnames:
+        del wb["요약"]
+    sm = wb.create_sheet("요약")
+    sm.sheet_view.showGridLines = False
+    sm["A1"] = "요약"
+    sm["A1"].font = Font(name=FONT, size=16, bold=True)
+    for c, t in {1: "단계", 2: "기간", 3: "목표진척율", 4: "진척율", 5: "상태"}.items():
+        cell = sm.cell(row=3, column=c, value=t)
+        cell.font = Font(name=FONT, size=10, bold=True, color="FFFFFFFF")
+        cell.fill = fill("FF000000")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = BORDER
+    for c, w in {1: 16, 2: 26, 3: 12, 4: 10, 5: 10}.items():
+        sm.column_dimensions[get_column_letter(c)].width = w
+
     # 사용안내(온보딩) 시트 추가
     build_guide_sheet(wb)
 
-    # 시트 순서: 표지 · 사용안내 · WBS · 공휴일
-    order = {"표지": 0, "사용안내": 1, "WBS": 2, "공휴일": 3}
+    # 시트 순서: 표지 · 사용안내 · 요약 · WBS · 공휴일
+    order = {"표지": 0, "사용안내": 1, "요약": 2, "WBS": 3, "공휴일": 4}
     wb._sheets.sort(key=lambda s: order.get(s.title, 99))
     wb.active = 0
     wb.save(out)

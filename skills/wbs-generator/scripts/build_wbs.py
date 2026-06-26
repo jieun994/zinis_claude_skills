@@ -118,6 +118,42 @@ def compute_structure(tasks, hol):
     return tasks
 
 
+def write_summary(wb, l1_rows):
+    """요약 시트: 전체(통합) + 단계(L1)별 — WBS 셀과 수식 연결(자동 갱신)."""
+    sm = wb["요약"]
+    Osum = "+".join(f"WBS!O{r}" for r in l1_rows) or "0"   # 총작업량
+    Psum = "+".join(f"WBS!P{r}" for r in l1_rows) or "0"   # 목표작업량
+    Qsum = "+".join(f"WBS!Q{r}" for r in l1_rows) or "0"   # 실작업량
+    # 전체(통합) 행 (4행)
+    sm["A4"] = "전체"
+    sm["B4"] = '=TEXT(WBS!$M$3,"yyyy-mm-dd")&" ~ "&TEXT(WBS!$R$3,"yyyy-mm-dd")'
+    sm["C4"] = f'=IFERROR(({Psum})/({Osum}),"")'
+    sm["D4"] = f'=IFERROR(({Qsum})/({Osum}),"")'
+    sm["E4"] = '=IF(D4="","",IF(D4>=1,"완료",IF(D4>0,"진행중","대기")))'
+    # 단계(L1)별 행 (5행~) — WBS 값을 그대로 참조
+    for i, wr in enumerate(l1_rows):
+        r = 5 + i
+        sm.cell(row=r, column=1).value = f"=WBS!D{wr}"
+        sm.cell(row=r, column=2).value = (
+            f'=TEXT(WBS!L{wr},"yyyy-mm-dd")&" ~ "&TEXT(WBS!M{wr},"yyyy-mm-dd")')
+        sm.cell(row=r, column=3).value = f"=WBS!R{wr}"
+        sm.cell(row=r, column=4).value = f"=WBS!S{wr}"
+        sm.cell(row=r, column=5).value = f"=WBS!T{wr}"
+    # 서식
+    last = 4 + len(l1_rows)
+    for r in range(4, last + 1):
+        for c in range(1, 6):
+            cell = sm.cell(row=r, column=c)
+            cell.border = BORDER
+            cell.font = Font(name=FONT, size=10, bold=(r == 4))
+            cell.alignment = Alignment(horizontal="left" if c == 1 else "center",
+                                       vertical="center")
+            if r == 4:
+                cell.fill = fill("FFF3F4F6")
+        sm.cell(row=r, column=3).number_format = "0.0%"
+        sm.cell(row=r, column=4).number_format = "0.0%"
+
+
 def build(input_json, output_xlsx, template_xlsx):
     with open(input_json, encoding="utf-8") as f:
         data = json.load(f)
@@ -208,11 +244,12 @@ def build(input_json, output_xlsx, template_xlsx):
             print(f"  [주의] L1 '{t.get('name')}' 은 고정 8종({L1_FIXED})에 없음.")
 
     a = c = d = 0
+    l1_rows = []
     for i, t in enumerate(tasks):
         r = FIRST_ROW + i
         lvl = int(t.get("level", 1))
         if lvl == 1:
-            a += 1; c = d = 0
+            a += 1; c = d = 0; l1_rows.append(r)
         elif lvl == 2:
             c += 1; d = 0
         else:
@@ -288,6 +325,9 @@ def build(input_json, output_xlsx, template_xlsx):
             cell.fill = fill("FFFFFFFF")
             cell.border = BORDER
             cell.font = Font(name=FONT, size=9)
+
+    # 요약 시트 채우기 (전체 + 단계별)
+    write_summary(wb, l1_rows)
 
     wb.save(output_xlsx)
     print(f"완료: {output_xlsx}  (작업 {len(tasks)}개, 공휴일 {len(pairs)}개)")
