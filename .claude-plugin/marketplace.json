@@ -9,7 +9,6 @@
       "name": "wbs-generator",
       "source": "./",
       "description": "프로젝트 WBS를 엑셀로 자동 생성 — 레벨별 작업·일정·간트차트·진척률·공휴일 자동",
-      "version": "0.1.0",
       "author": {
         "name": "신지은"
       }

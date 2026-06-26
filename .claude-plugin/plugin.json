@@ -1,7 +1,6 @@
 {
   "name": "wbs-generator",
   "description": "프로젝트 WBS(작업분해구조)를 엑셀로 자동 생성하는 스킬",
-  "version": "0.1.0",
   "author": {
     "name": "신지은"
   }
