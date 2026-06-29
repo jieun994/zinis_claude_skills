@@ -20,6 +20,14 @@
       "author": {
         "name": "신지은"
       }
+    },
+    {
+      "name": "flowchart-defense",
+      "source": "./skills/flowchart-defense",
+      "description": "고객이 준 흐름도(PPT·이미지·PDF·mermaid)를 검토하고 방어설계로 보강 — 패턴 1~8로 누락 예외·빈결과·취소·막다른길을 점검해 검토 리포트 생성",
+      "author": {
+        "name": "신지은"
+      }
     }
   ]
 }
