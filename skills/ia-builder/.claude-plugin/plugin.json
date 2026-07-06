@@ -1,0 +1,8 @@
+{
+  "name": "ia-builder",
+  "description": "서비스 메뉴 구조(사이트맵/IA)와 기능정의서를 엑셀로 자동 생성하는 스킬",
+  "version": "0.1.0",
+  "author": {
+    "name": "신지은"
+  }
+}

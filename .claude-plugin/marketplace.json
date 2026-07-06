@@ -1,0 +1,65 @@
+{
+  "name": "zinis_claude_skills",
+  "owner": {
+    "name": "신지은"
+  },
+  "description": "신지은의 Claude 스킬 모음 마켓플레이스",
+  "plugins": [
+    {
+      "name": "wbs-generator",
+      "source": "./skills/wbs-generator",
+      "description": "프로젝트 WBS를 엑셀로 자동 생성 — 레벨별 작업·일정·간트차트·진척률·공휴일 자동",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
+      "name": "ia-builder",
+      "source": "./skills/ia-builder",
+      "description": "서비스 메뉴 구조(사이트맵/IA)와 기능정의서를 엑셀로 자동 생성 — Front/Admin 분리·역할별 CRUD 권한·개발구분 지원",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
+      "name": "flowchart-defense",
+      "source": "./skills/flowchart-defense",
+      "description": "고객이 준 흐름도(PPT·이미지·PDF·mermaid)를 검토하고 방어설계로 보강 — 패턴 1~8로 누락 예외·빈결과·취소·막다른길을 점검해 검토 리포트 생성",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
+      "name": "weekly-report",
+      "source": "./skills/weekly-report",
+      "description": "주간업무 보고서(PPT)를 기존 양식 그대로 자동 작성 — W1/W2 선택, 진척률 누적% 입력 시 표 6칸 자동 계산, 지난주 보고서 이어받기",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
+      "name": "dev-reading",
+      "source": "./skills/dev-reading",
+      "description": "개발자료(API 명세·DB 스키마/ERD·기술문서)를 비개발 기획자가 이해하도록 해설 — 평이 번역·용어·개발자에게 물을 질문·기획 영향, 불확실은 [개발자 확인 필요]로 분리",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
+      "name": "requirements-generator",
+      "source": "./skills/requirements-generator",
+      "description": "요구사항 정의서를 엑셀로 자동 생성 — 회의록·RFP·기존 IA/기능정의 엑셀에서 요구사항을 도출, 대분류별 자동 채번(REQ-CHT/COM/BOS/SYS), 출처(원문 근거 vs AI추정) 표기로 지어내기 방지",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
+      "name": "jieun",
+      "source": "./personas/jieun",
+      "description": "신지은님처럼 일하는 분신 에이전트 모음(나답게) — 메일 쓰는 나·기획하는 나·개발 통역하는 나",
+      "author": {
+        "name": "신지은"
+      }
+    }
+  ]
+}
