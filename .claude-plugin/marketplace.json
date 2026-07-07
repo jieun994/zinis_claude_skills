@@ -54,6 +54,14 @@
       }
     },
     {
+      "name": "meeting-minutes",
+      "source": "./skills/meeting-minutes",
+      "description": "녹취록·메모로 표준 엑셀 회의록 자동 작성 — 양측 이해차이·자료무효 풀어쓰기, 검토사유 병기, TO-DO 항목별 분해(담당자·기한·형식), 원문에 없으면 미정(확인 필요) 표기",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
       "name": "jieun",
       "source": "./personas/jieun",
       "description": "신지은님처럼 일하는 분신 에이전트 모음(나답게) — 메일 쓰는 나·기획하는 나·개발 통역하는 나",
