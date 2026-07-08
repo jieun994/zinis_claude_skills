@@ -1,0 +1,7 @@
+{
+  "name": "meeting-minutes",
+  "description": "녹취록·메모로 표준 엑셀 회의록을 자동 작성하는 스킬",
+  "author": {
+    "name": "신지은"
+  }
+}

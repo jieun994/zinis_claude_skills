@@ -89,10 +89,12 @@ description: >
 전체 트리를 한 번 더 표로 보여주고 최종 확인을 받는다. 임의 확정 금지.
 
 ### 4. JSON 작성 후 스크립트 실행
+> 아래 명령은 Claude가 대신 실행한다 — 사용자가 직접 입력할 필요 없다.
 ```
 cd skills/wbs-generator
 PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python scripts/build_wbs.py <입력.json> <출력.xlsx> template/WBS_template.xlsx
 ```
+(Windows PowerShell에서는: `$env:PYTHONIOENCODING="utf-8"; $env:PYTHONUTF8="1"; python scripts/build_wbs.py <입력.json> <출력.xlsx> template/WBS_template.xlsx`)
 출력 파일명은 `프로젝트명_WBS_YYYYMMDD.xlsx` 식으로.
 - 사전 요구: `pip install openpyxl holidays`
 - 템플릿은 원본 WBS 샘플에서 파생한다. 다시 만들려면:

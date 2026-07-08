@@ -1,0 +1,7 @@
+{
+  "name": "weekly-report",
+  "description": "주간업무 보고서(PPT)를 기존 양식 그대로 자동 작성하는 스킬",
+  "author": {
+    "name": "신지은"
+  }
+}
