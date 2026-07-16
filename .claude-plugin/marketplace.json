@@ -62,6 +62,14 @@
       }
     },
     {
+      "name": "qa-master",
+      "source": "./skills/qa-master",
+      "description": "ISTQB(CTFL·CTAL·CTEL) 기반 테스트케이스·시나리오 엑셀 생성과 기획서 QA 검토·테스트 계획 수립 — 케이스마다 적용 기법·출처(문서 근거 vs AI보완) 표기로 지어내기 방지",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
       "name": "jieun",
       "source": "./personas/jieun",
       "description": "신지은님처럼 일하는 분신 에이전트 모음(나답게) — 메일 쓰는 나·기획하는 나·개발 통역하는 나",

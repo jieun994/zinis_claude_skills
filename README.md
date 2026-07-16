@@ -85,6 +85,7 @@
 | **dev-reading** | 개발자료(API 명세·DB 스키마/ERD·기술문서)를 비개발 기획자가 이해하도록 해설 | `/plugin install dev-reading@zinis_claude_skills` |
 | **requirements-generator** | 요구사항 정의서를 엑셀로 자동 생성 | `/plugin install requirements-generator@zinis_claude_skills` |
 | **meeting-minutes** | 녹취록·메모로 표준 엑셀 회의록 자동 작성 | `/plugin install meeting-minutes@zinis_claude_skills` |
+| **qa-master** | ISTQB(CTFL·CTAL·CTEL) 기반 테스트케이스·시나리오 엑셀 생성과 기획서 QA 검토·테스트 계획 수립 | `/plugin install qa-master@zinis_claude_skills` |
 | **jieun** | 신지은님처럼 일하는 분신 에이전트 모음(나답게) | `/plugin install jieun@zinis_claude_skills` |
 <!-- SKILLS:END -->
 
