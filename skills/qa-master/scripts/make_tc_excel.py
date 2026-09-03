@@ -61,7 +61,24 @@ def _style_table(ws, header, widths, center_cols, freeze=True):
         ws.auto_filter.ref = f"A1:{get_column_letter(len(header))}{ws.max_row}"
 
 
+def _validate_inputs(scenarios, testcases):
+    """입력 검증 — 컬럼 수 불일치·출처 누락(빈 출처 = 오류)이 있으면 즉시 중단한다."""
+    for i, row in enumerate(scenarios):
+        if len(row) != len(SCN_HEADER):
+            raise SystemExit(f"시나리오 {i+1}행: 컬럼 수 {len(row)}개 — {len(SCN_HEADER)}개여야 합니다")
+    for i, row in enumerate(testcases):
+        if len(row) != len(TC_HEADER):
+            raise SystemExit(f"테스트케이스 {i+1}행: 컬럼 수 {len(row)}개 — {len(TC_HEADER)}개여야 합니다")
+    idx_src = TC_HEADER.index("출처")
+    missing = [i + 1 for i, row in enumerate(testcases)
+               if row[idx_src] is None or not str(row[idx_src]).strip()]
+    if missing:
+        raise SystemExit(f"출처 누락 {len(missing)}건: {', '.join(map(str, missing))}행 — 모든 TC에 출처 필수")
+
+
 def build_workbook(overview, scenarios, testcases, out_path, submission=False):
+    _validate_inputs(scenarios, testcases)
+
     header = list(TC_HEADER)
     widths = list(TC_WIDTHS)
     tcs = [list(row) for row in testcases]

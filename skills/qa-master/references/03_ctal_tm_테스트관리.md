@@ -1,3 +1,11 @@
+---
+유형: 테스트
+분류: 업무개인
+수정일: 2026-07-29
+태그:
+  - 유형/테스트
+---
+
 # 테스트 계획·QA 관리 지식 문서 (ISTQB CTAL-TM v3.0 증류)
 
 - 출처: ISTQB Certified Tester Advanced Level - Test Management Syllabus v3.0 (한글 v1.0, KSTQB)

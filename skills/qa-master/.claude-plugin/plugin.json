@@ -1,0 +1,8 @@
+{
+  "name": "qa-master",
+  "description": "ISTQB 지식 기반으로 테스트케이스·시나리오 엑셀 생성, 기획서 QA 검토, 테스트 계획 수립을 수행하는 스킬",
+  "version": "0.1.0",
+  "author": {
+    "name": "신지은"
+  }
+}

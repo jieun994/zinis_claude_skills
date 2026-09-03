@@ -1,3 +1,11 @@
+---
+유형: 분석
+분류: 업무개인
+수정일: 2026-07-29
+태그:
+  - 유형/분석
+---
+
 # ISTQB Expert Level(CTEL) 참고 지식 — 테스트 전략·프로세스 개선
 
 > 목적: 조직/프로젝트 차원에서 테스트를 전략적으로 운영·개선하는 규칙을 CTEL 두 모듈(Test Management, Improving the Test Process) 기준으로 정리
