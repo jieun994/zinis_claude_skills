@@ -66,10 +66,11 @@ description: This skill should be used when the user wants to review a customer-
 - **PPTX**: `scripts/extract_pptx.py`로 도형 텍스트를 추출(누락 방지)하고, 동시에 슬라이드를
   비전으로 읽어 화살표 연결을 복원한다. **PPTX의 화살표 연결관계 복원이 가장 어려우니** 비전을 주 경로로 쓴다.
   ```
-  cd skills/flowchart-defense
-  PYTHONUTF8=1 python scripts/extract_pptx.py <파일.pptx>
+  PYTHONUTF8=1 python "${CLAUDE_PLUGIN_ROOT}/scripts/extract_pptx.py" <파일.pptx>
   ```
-  Windows PowerShell에서는 `$env:PYTHONUTF8=1; python scripts/extract_pptx.py <파일.pptx>`. `python`이 없으면 `py -3`.
+  Windows PowerShell에서는 `${CLAUDE_PLUGIN_ROOT}` → `$env:CLAUDE_PLUGIN_ROOT`
+  (`$env:PYTHONUTF8=1; python "$env:CLAUDE_PLUGIN_ROOT/scripts/extract_pptx.py" <파일.pptx>`).
+  변수가 없으면(로컬 실행) 이 SKILL.md가 있는 폴더 기준 경로를 쓴다. `python`이 없으면 `py -3`.
   python-pptx가 있으면 도형 좌표까지, 없으면 XML에서 텍스트만 뽑는다(둘 다 작동).
   - **슬라이드 이미지 렌더(화살표 판독 필수)**: 추출은 텍스트·좌표만 주므로 화살표 연결은 **슬라이드를 이미지로 렌더해 비전**으로 본다. LibreOffice(soffice)가 있으면 PDF로 변환, 없으면 **PowerPoint COM**으로 슬라이드를 PNG로 내보낸다 — 보조 스크립트 `scripts/render_slides.py` 사용.
   - **잘림 주의**: 슬라이드가 넓거나 세로로 길면 PNG 가장자리가 잘린다. 먼저 슬라이드 크기를 확인하고, 잘리면 고해상도로 다시 내보내거나 영역을 크롭해 읽는다.
@@ -148,6 +149,13 @@ description: This skill should be used when the user wants to review a customer-
 **mermaid 렌더 검증**: 생성한 mermaid는 `mmdc`(있으면)로 한 번 렌더해 문법 오류가 없는지 확인한다.
 깨지면 노드 ID 중복·따옴표 이스케이프·미정의 classDef를 점검한다.
 
+**mermaid 셀프체크(렌더 여부와 무관, 항상 수행):**
+1. 한글 라벨에 `( )` `/` `?` 포함 시 라벨 전체를 따옴표로 감쌌는가
+2. 노드 ID 중복 없음
+3. 성격 class 문에 등장하는 노드 ID가 성격 분류(`user`/`ui`/`api`/`logic`/`system`) 중 정확히 1개에만 속하는가 — 보강·추정 노드처럼 `add`/`guess` 상태 클래스만 달린 노드는 성격 분류 생략 가능 (성격 분류와 상태 클래스의 중복은 허용)
+4. class 문에 등장한 ID가 전부 위에서 정의됐는가
+5. 섹션 2 분류표의 노드 목록과 class 태깅이 1:1 일치하는가
+
 이 전체 MD는 **기획자(내부)용 마스터**다. 고객 발송본은 별도 톤(이모지·★ 제거, 개조식·명사형)으로
 정리한다 — output-templates.md "고객 발송본 톤" 참조.
 
@@ -162,10 +170,11 @@ description: This skill should be used when the user wants to review a customer-
 2. 그 요약본 MD를 워드로 변환한다.
 
 ```
-cd skills/flowchart-defense
-PYTHONUTF8=1 python scripts/render_docx.py <고객요약본.md> <출력.docx>
+PYTHONUTF8=1 python "${CLAUDE_PLUGIN_ROOT}/scripts/render_docx.py" <고객요약본.md> <출력.docx>
 ```
-Windows PowerShell에서는 `$env:PYTHONUTF8=1; python scripts/render_docx.py ...`. 사전: `pip install python-docx`.
+Windows PowerShell에서는 `${CLAUDE_PLUGIN_ROOT}` → `$env:CLAUDE_PLUGIN_ROOT`
+(`$env:PYTHONUTF8=1; python "$env:CLAUDE_PLUGIN_ROOT/scripts/render_docx.py" ...`).
+변수가 없으면(로컬 실행) 이 SKILL.md가 있는 폴더 기준 경로를 쓴다. 사전: `pip install python-docx`.
 (고객이 전체 상세본을 원하면 마스터 MD를 그대로 변환해도 된다.)
 
 - 스크립트가 표를 워드 표로 변환하고 **모든 글자에 한글 폰트(맑은 고딕)를 지정**한다(한글 깨짐 방지).
@@ -186,11 +195,20 @@ Windows PowerShell에서는 `$env:PYTHONUTF8=1; python scripts/render_docx.py ..
    - **활성/폐기 먼저 분류** — PPTX 한 파일에 슬라이드가 여럿이면 1슬라이드=1흐름인 경우가 많다.
      이때 **'머지·통합·폐기' 표식**(전체 캔버스를 덮는 대형 도형, 좌표 top<0, "~ 머지/통합" 텍스트)이 붙은
      슬라이드는 **폐기·통합본**이다. 검토 대상에서 제외하고, 목록에 "→ 통합 대상" 1줄만 표시한다.
+     - **판별 규칙(신호 결합)**: '머지/통합/폐기' 류 **텍스트 표식이 필수 조건**이다. 대형 도형·top<0
+       좌표는 보조 신호일 뿐, 텍스트 표식 없이 도형·좌표만으로 폐기 판정하지 않는다.
+       애매하면 활성으로 두고, 폐기 의심 목록을 사용자에게 확인받는다.
    - **파일명 번호 접두** — 1슬라이드=1흐름 덱은 출력 파일명에 슬라이드 번호 2자리를 붙여
      `NN_{흐름명}_검토리포트_YYYYMMDD.md`로 만든다(정렬·원본 대조 용이, 결번은 폐기 슬라이드).
 2. **묶음별 처리** — 각 파일을 Step 1·3·4로 처리해 **1개당 리포트 1개**를 만든다.
    배치에서는 Step 2(원본 확정)를 **저신뢰 추출만 플래그**하는 방식으로 완화한다:
    추출 신뢰도가 낮은 흐름도만 모아 "이건 사람 확인이 필요해요"로 표시한다(나머지는 자동 진행).
+   - **저신뢰 플래그 기준**(하나라도 해당 시 플래그, 아니면 자동 진행):
+     - extract_pptx 텍스트 중 그래프에 배치하지 못한 도형이 1개 이상
+     - 시작/끝이 어느 노드에도 안 붙는 화살표가 1개 이상
+     - 판독 불가·깨진 라벨이 1개 이상
+     - 게이트(분기)인데 분기 라벨을 원본에서 못 읽은 곳이 1개 이상
+   - "느낌상 애매함"은 플래그 사유가 아니다.
 3. **묶음 요약** — 묶음이 끝나면 "8개 중 6개 완료, 2개 확인 필요"처럼 요약하고 다음 묶음으로.
 4. **확인요망 취합** — 배치에서는 각 리포트의 확인요망을 `고객확인요망_취합.md`로 모아도 좋다.
 

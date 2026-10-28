@@ -14,6 +14,9 @@
   차주 주간 = 차주 목표 - 이번주 실적
   차주 누적 = 차주 목표
 
+W2 월간표 6칸도 같은 방식으로 누적 % 4개(전월 실적/당월 계획/당월 실적/익월 목표)에서
+자동 계산한다(compute_monthly_progress). 6값 리스트를 직접 주면 그대로 사용(하위 호환).
+
 에러는 stderr로, 결과는 stdout(JSON)으로 출력한다.
 """
 import sys
@@ -153,12 +156,33 @@ def fmt_pct(v):
 # ----------------------------------------------------------------------------
 # 진척률 계산 (사용자 공식)
 # ----------------------------------------------------------------------------
+def _to_num(v):
+    """입력값을 숫자로 안전 변환. None/'-'/''/공백/변환 불가 → None.
+    '85%' 같은 퍼센트 표기도 허용한다. 계산 실패가 보고서 생성 전체를 막지 않게 한다."""
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    s = str(v).strip().replace("%", "")
+    if s in ("", "-"):
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
 def compute_progress(prev_actual, this_plan, this_actual, next_plan):
-    """누적 % 4개 → 표 6칸. 입력 중 하나라도 None이면 해당 계산은 '-'."""
+    """누적 % 4개 → 표 6칸. 입력 중 하나라도 None/'-'/비정상 값이면 해당 계산은 '-'."""
+    prev_actual = _to_num(prev_actual)
+    this_plan = _to_num(this_plan)
+    this_actual = _to_num(this_actual)
+    next_plan = _to_num(next_plan)
+
     def sub(a, b):
         if a is None or b is None:
             return None
-        return round(float(a) - float(b), 1)
+        return round(a - b, 1)
 
     return {
         "주간_계획": sub(this_plan, prev_actual),
@@ -168,6 +192,37 @@ def compute_progress(prev_actual, this_plan, this_actual, next_plan):
         "차주_주간": sub(next_plan, this_actual),
         "차주_누적": next_plan,
     }
+
+
+def compute_monthly_progress(prev_month_actual, month_plan, month_actual, next_month_plan):
+    """W2 월간표 6칸 계산 — 주간 compute_progress와 대칭.
+    입력: 누적 % 4개(전월 실적, 당월 계획, 당월 실적, 익월 목표)
+    출력: 월간표 컬럼 순서 [당월계획, 당월실적, 누적계획, 누적실적, 익월계획, 익월누적]
+      당월 계획 = 당월 계획(누적) - 전월 실적(누적)
+      당월 실적 = 당월 실적(누적) - 전월 실적(누적)
+      누적 계획 = 당월 계획(누적)
+      누적 실적 = 당월 실적(누적)
+      익월 계획 = 익월 목표(누적) - 당월 실적(누적)
+      익월 누적 = 익월 목표(누적)
+    입력 중 하나라도 None/'-'/비정상 값이면 해당 칸은 None('-')."""
+    prev_month_actual = _to_num(prev_month_actual)
+    month_plan = _to_num(month_plan)
+    month_actual = _to_num(month_actual)
+    next_month_plan = _to_num(next_month_plan)
+
+    def sub(a, b):
+        if a is None or b is None:
+            return None
+        return round(a - b, 1)
+
+    return [
+        sub(month_plan, prev_month_actual),     # 당월 계획
+        sub(month_actual, prev_month_actual),   # 당월 실적
+        month_plan,                              # 누적 계획
+        month_actual,                            # 누적 실적
+        sub(next_month_plan, month_actual),      # 익월 계획
+        next_month_plan,                         # 익월 누적
+    ]
 
 
 # ----------------------------------------------------------------------------
@@ -546,35 +601,82 @@ def is_risk_table(tbl):
         return False
 
 
-def fill_monthly(prs, monthly):
+def _basis_md(basis):
+    """실적 기준 값('06월 26일', '2026. 06. 26', '6/26' 등)에서 'M/D'를 뽑는다.
+    해석할 수 없으면 None (조용한 오변환 금지 — 이때는 치환하지 않는다)."""
+    if not basis:
+        return None
+    s = str(basis)
+    m = re.search(r"(\d{1,2})\s*월\s*(\d{1,2})\s*일", s)
+    if not m:
+        m = re.search(r"20\d{2}\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})", s)
+    if not m:
+        m = re.fullmatch(r"\s*(\d{1,2})\s*/\s*(\d{1,2})\s*", s)
+    if not m:
+        return None
+    return "%d/%d" % (int(m.group(1)), int(m.group(2)))
+
+
+def fill_monthly(prs, monthly, actual_basis=None):
     """monthly = {month_label, next_month, period, plan_basis,
-                  progress:{구분:[6값]}, performance:{구분:{text,note}},
-                  issues:[{issue,impact,action}], goals:{구분:{text,note}}}"""
+                  progress:{구분: {prev_month_actual, month_plan, month_actual, next_month_plan}}  ← 기본(누적 4값, 스크립트 계산)
+                           또는 {구분: [6값]}  ← 하위 호환(당월계획/당월실적/누적계획/누적실적/익월계획/익월누적 직접 입력),
+                  performance:{구분:{text,note}},
+                  issues:[{issue,impact,action}], goals:{구분:{text,note}}}
+    actual_basis: data.json의 실적 기준일 — 월간표 헤더의 '(M/D 기준)'을 이 값으로 치환."""
     if not monthly:
         return
     ml = monthly.get("month_label")        # 예: '6월'
     nm = monthly.get("next_month")          # 예: '7월'
-    # 섹션 제목/헤더의 〇월 치환
+
+    # 월간 결산 슬라이드 집합 (표 시그니처 기반 — 슬라이드 순서가 바뀌어도 안전)
+    monthly_slide_ids = set()
+    for pred in (is_month_progress, is_perf_table, is_goal_table, is_risk_table):
+        for idx, slide, sh, tbl in find_tables(prs, pred):
+            monthly_slide_ids.add(idx)
+
+    # 월간 기간 텍스트 (update_cover_and_dates가 주간 기간으로 채운 뒤라 여기서 덮어쓴다)
+    period_text = None
+    mp = monthly.get("period")
+    if mp:
+        mp = str(mp).strip()
+        period_text = mp if mp.startswith("기간") else "기간 : " + mp
+
+    # 섹션 제목/헤더의 〇월 치환 + 월간 결산 슬라이드 기간 교체
     for idx, slide, sh in all_shapes(prs):
         if sh.has_text_frame:
             t = sh.text_frame.text
             if "〇월" in t:
                 new = t.replace("〇월 진척 상황", (ml or "") + " 진척 상황")
                 set_textbox_text(sh, new)
-            elif t.strip() == "기간 :" and monthly.get("period"):
-                set_textbox_text(sh, "기간 : " + monthly["period"])
+            elif period_text and (t.strip() == "기간 :" or
+                                  (idx in monthly_slide_ids and t.strip().startswith("기간"))):
+                set_textbox_text(sh, period_text)
 
+    basis_md = _basis_md(actual_basis)
     prog = monthly.get("progress", {})
     for idx, slide, sh, tbl in find_tables(prs, is_month_progress):
-        # 헤더 〇월 치환
+        # 헤더 〇월 치환 + '(M/D 기준)' 하드코딩 날짜를 실적 기준일로 치환
         for c in range(len(tbl.columns)):
-            if "〇월" in tbl.cell(0, c).text and nm:
-                set_cell_text(tbl.cell(0, c), tbl.cell(0, c).text.replace("〇월", nm))
+            old = cell_text(tbl.cell(0, c)).replace("_x000B_", "\n")
+            new = old
+            if "〇월" in new and nm:
+                new = new.replace("〇월", nm)
+            if basis_md:
+                new = re.sub(r"\(\s*\d{1,2}\s*/\s*\d{1,2}\s*기준\)",
+                             "(%s 기준)" % basis_md, new)
+            if new != old:
+                set_cell_text(tbl.cell(0, c), new)
         for r in range(3, len(tbl.rows)):
             g = tbl.cell(r, 0).text.strip()
             vals = prog.get(g) or _match_gubun(prog, g)
             if not vals:
                 continue
+            # 새 방식: 누적 4값 dict → 스크립트가 6칸 계산 / 기존 방식: 6값 리스트 그대로 사용
+            if isinstance(vals, dict):
+                vals = compute_monthly_progress(
+                    vals.get("prev_month_actual"), vals.get("month_plan"),
+                    vals.get("month_actual"), vals.get("next_month_plan"))
             for ci, v in enumerate(vals[:6], start=1):
                 if ci < len(tbl.columns):
                     set_cell_text(tbl.cell(r, ci), fmt_pct(v) if v not in (None, "-", "") else "-")
@@ -659,7 +761,7 @@ def cmd_build(data_path):
     fill_issue_table(prs, data.get("issues"))
     fill_delay_table(prs, data.get("delay"))
     if mode == "W2":
-        fill_monthly(prs, data.get("monthly"))
+        fill_monthly(prs, data.get("monthly"), data.get("actual_basis"))
 
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     prs.save(out_path)

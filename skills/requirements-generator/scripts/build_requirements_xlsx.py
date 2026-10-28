@@ -54,7 +54,8 @@ COLUMNS = [
 # 병합 헤더 (요구사항명 G3:H3, 요청자 J3:M3), 나머지는 3~4행 세로 병합
 MERGE_HGROUP = {7: 8, 10: 13}  # 시작열 -> 끝열 (가로 병합)
 
-# 대분류 → 요구사항ID 접두어
+# 대분류 → 요구사항ID 접두어 (기본값)
+# 입력 JSON 최상위에 "prefix_map"(예: {"주문": "ORD"})을 주면 여기에 병합된다.
 PREFIX_MAP = {
     "챗봇": "CHT",
     "공통": "COM",
@@ -68,26 +69,31 @@ HEADER_FONT = Font(bold=True, color="FFFFFFFF", size=10, name="맑은 고딕")
 TITLE_FONT = Font(bold=True, size=13, name="맑은 고딕")
 BODY_FONT = Font(size=10, name="맑은 고딕")
 AI_FILL = PatternFill("solid", fgColor="FFFFF2CC")  # AI추정 행 강조(연노랑)
+EMPTY_SRC_FILL = PatternFill("solid", fgColor="FFFFC7CE")  # 출처 누락 강조(빨강 계열)
 THIN = Side(style="thin", color="FFBFBFBF")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 LEFT = Alignment(horizontal="left", vertical="center", wrap_text=True)
 
 
-def derive_prefix(대분류):
+def derive_prefix(대분류, prefix_map):
     if not 대분류:
         return "ETC"
-    return PREFIX_MAP.get(str(대분류).strip(), "ETC")
+    return prefix_map.get(str(대분류).strip(), "ETC")
 
 
-def assign_ids(reqs):
+def assign_ids(reqs, prefix_map):
     """대분류별로 REQ-<PREFIX>-### 채번. 이미 ID가 있으면 존중하되 중복은 경고."""
     counters = {}
     seen = set()
     warnings = []
+    unmapped = []  # 접두어 미지정 대분류 (입력 순서 유지)
     for r in reqs:
+        대분류 = str(r.get("대분류") or "").strip()
+        if 대분류 and 대분류 not in prefix_map and 대분류 not in unmapped:
+            unmapped.append(대분류)
         existing = str(r.get("요구사항ID") or "").strip()
-        prefix = derive_prefix(r.get("대분류"))
+        prefix = derive_prefix(r.get("대분류"), prefix_map)
         if existing:
             if existing in seen:
                 warnings.append(f"요구사항ID 중복: {existing}")
@@ -105,11 +111,16 @@ def assign_ids(reqs):
             new_id = f"REQ-{prefix}-{counters[prefix]:03d}"
         r["요구사항ID"] = new_id
         seen.add(new_id)
+    for name in unmapped:
+        warnings.append(f"대분류 '{name}'는 접두어 미지정 → ETC로 채번됨")
     return warnings
 
 
-def build(reqs, out_path, project_name=""):
-    warnings = assign_ids(reqs)
+def build(reqs, out_path, project_name="", prefix_map=None):
+    merged_map = dict(PREFIX_MAP)
+    if prefix_map:
+        merged_map.update({str(k).strip(): str(v).strip() for k, v in prefix_map.items()})
+    warnings = assign_ids(reqs, merged_map)
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -161,12 +172,16 @@ def build(reqs, out_path, project_name=""):
 
     # 데이터 (row5~)
     ai_count = 0
+    empty_source_ids = []  # 출처가 빈 행의 요구사항ID
     row = 5
     for idx, r in enumerate(reqs, start=1):
         출처 = str(r.get("출처") or "")
         is_ai = 출처.replace(" ", "").startswith("AI추정")
+        is_empty_src = not 출처.strip()
         if is_ai:
             ai_count += 1
+        if is_empty_src:
+            empty_source_ids.append(str(r.get("요구사항ID") or f"(행 {idx})"))
         ws.cell(row, 1, idx)  # No
         for colnum, _h3, _h4, key, _w in COLUMNS:
             if key is None or colnum == 1:
@@ -176,14 +191,22 @@ def build(reqs, out_path, project_name=""):
             cell.font = BODY_FONT
             cell.border = BORDER
             cell.alignment = LEFT if colnum == 9 else CENTER
-            if is_ai and colnum == 15:  # 출처 셀 강조
-                cell.fill = AI_FILL
+            if colnum == 15:  # 출처 셀 강조
+                if is_empty_src:
+                    cell.fill = EMPTY_SRC_FILL
+                elif is_ai:
+                    cell.fill = AI_FILL
         ws.cell(row, 1).font = BODY_FONT
         ws.cell(row, 1).border = BORDER
         ws.cell(row, 1).alignment = CENTER
         row += 1
 
     ws.freeze_panes = "A5"
+
+    if empty_source_ids:
+        warnings.append(
+            f"출처 누락 {len(empty_source_ids)}건: " + ", ".join(empty_source_ids)
+        )
 
     wb.save(out_path)
 
@@ -215,10 +238,14 @@ def main():
         sys.stderr.write(f"입력 JSON 읽기 실패: {e}\n")
         sys.exit(1)
     reqs = data.get("requirements") if isinstance(data, dict) else data
+    prefix_map = data.get("prefix_map") if isinstance(data, dict) else None
+    if prefix_map is not None and not isinstance(prefix_map, dict):
+        sys.stderr.write("prefix_map은 {\"대분류\": \"접두어\"} 형태의 객체여야 합니다.\n")
+        sys.exit(1)
     if not isinstance(reqs, list) or not reqs:
         sys.stderr.write("요구사항 목록(requirements)이 비어 있습니다.\n")
         sys.exit(1)
-    result = build(reqs, out_path, project)
+    result = build(reqs, out_path, project, prefix_map=prefix_map)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

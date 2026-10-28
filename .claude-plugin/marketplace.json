@@ -62,6 +62,14 @@
       }
     },
     {
+      "name": "meeting-agenda",
+      "source": "./skills/meeting-agenda",
+      "description": "회의 전에 안건·물어볼 것·결정할 것을 미리 정리 — 지난 회의록의 미완료 TO-DO·미해결 이슈를 자동 승계, 안건마다 근거 표기와 일반론 자가검증으로 뻔한 안건·지어내기 방지 (meeting-minutes의 앞단)",
+      "author": {
+        "name": "신지은"
+      }
+    },
+    {
       "name": "qa-master",
       "source": "./skills/qa-master",
       "description": "ISTQB(CTFL·CTAL·CTEL) 기반 테스트케이스·시나리오 엑셀 생성과 기획서 QA 검토·테스트 계획 수립 — 케이스마다 적용 기법·출처(문서 근거 vs AI보완) 표기로 지어내기 방지",

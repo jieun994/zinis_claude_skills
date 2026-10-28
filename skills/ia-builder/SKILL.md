@@ -8,8 +8,9 @@ description: This skill should be used when the user wants to build a service's 
 서비스 설명을 받아 메뉴 트리를 설계하고, `scripts/build_ia.py`로 엑셀 IA를 만든다.
 출력은 신지은님의 실제 IA 양식(NO 자동번호, Depth1~5, Front/Admin 시트 분리, 권한 O/X)에
 기능정의 컬럼(페이지 정의·세부 사항·page·개발구분)을 더한 형태다. 스타일·색상은
-wbs-generator 샘플을 따른다(컬럼 헤더=검정+흰글씨, Depth1=진회색·Depth2=연노랑,
-Malgun Gothic). **표지·사용안내·개정이력 시트가 자동 생성**된 뒤 IA 시트들이 붙는다.
+모던 네이비 톤이다(타이틀 밴드·컬럼 헤더=네이비+흰글씨, 본문=흰 배경 기본+옅은
+지브라 줄무늬, Depth1 행=굵게+위 구분선, Malgun Gothic).
+**표지·사용안내·개정이력 시트가 자동 생성**된 뒤 IA 시트들이 붙는다.
 (사람용 설명은 README.md 참조)
 
 ## 핵심 원칙
@@ -137,11 +138,11 @@ Tab/서브플로우→`tab`. 권한은 해당 시트에 `roles`(역할 목록)�
 확정된 트리를 입력 JSON으로 만들고 스크립트를 실행한다:
 
 ```
-cd skills/ia-builder
-PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python scripts/build_ia.py <입력.json> <출력.xlsx>
+PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python "${CLAUDE_PLUGIN_ROOT}/scripts/build_ia.py" <입력.json> <출력.xlsx>
 ```
 
-Windows PowerShell에서는 `$env:PYTHONUTF8=1; python scripts/build_ia.py <입력.json> <출력.xlsx>`.
+Windows PowerShell에서는 `$env:PYTHONUTF8=1; python "$env:CLAUDE_PLUGIN_ROOT/scripts/build_ia.py" <입력.json> <출력.xlsx>`.
+`${CLAUDE_PLUGIN_ROOT}` 변수가 없으면(로컬 실행) 이 SKILL.md가 있는 폴더를 기준으로 경로를 잡는다.
 `python`이 없으면 `py -3`을 쓴다. 사전 요구: `pip install openpyxl`.
 출력 파일명은 `프로젝트명_IA_YYYYMMDD.xlsx` 식으로.
 
@@ -162,15 +163,15 @@ IA는 보통 PRD·WBS의 앞단 산출물이므로, 필요하면 "이 IA로 PRD�
     "author": "신지은", "author_date": "2026-06-26", "version": "v0.1"
   },
   "doc_type": "사이트 구조 및 기능정의",
-  "columns": ["page_def", "dev_split", "page", "detail", "code", "tab"],
+  "columns": ["page_def", "dev_split", "page", "detail", "tab"],
   "max_depth": 5,
   "sheets": [
     {
       "sheet_name": "Front 정보구조도",
       "title": "사이트 구조 및 기능정의",
       "rows": [
-        {"depth": 1, "name": "로그인", "code": "1", "page_def": "디자인 페이지", "dev": ["디자인"]},
-        {"depth": 1, "name": "일계부", "code": "2"},
+        {"depth": 1, "name": "로그인", "code": "1.0", "page_def": "디자인 페이지", "dev": ["디자인"]},
+        {"depth": 1, "name": "일계부", "code": "2.0"},
         {"depth": 2, "name": "월별 현황", "code": "2.1", "page_def": "리스트 게시판", "page": 1, "dev": ["퍼블리싱", "개발"]},
         {"depth": 2, "name": "공지사항", "code": "2.2", "note": "2차", "phase2": true}
       ]
@@ -181,8 +182,8 @@ IA는 보통 PRD·WBS의 앞단 산출물이므로, 필요하면 "이 IA로 PRD�
       "roles": ["에디터", "운영자", "최고관리자"],
       "columns": ["page_def", "page"],
       "rows": [
-        {"depth": 1, "name": "대시보드", "code": "A.1", "page_def": "대시보드", "auth": {"에디터": "R", "운영자": "R", "최고관리자": "R"}},
-        {"depth": 1, "name": "회원 관리", "code": "A.2", "page_def": "리스트 + 상세", "auth": {"에디터": "R", "운영자": "RU", "최고관리자": "CRUD"}}
+        {"depth": 1, "name": "대시보드", "code": "A.1.0", "page_def": "대시보드", "auth": {"에디터": "R", "운영자": "R", "최고관리자": "R"}},
+        {"depth": 1, "name": "회원 관리", "code": "A.2.0", "page_def": "리스트 + 상세", "auth": {"에디터": "R", "운영자": "RU", "최고관리자": "CRUD"}}
       ]
     }
   ]
@@ -201,7 +202,9 @@ IA는 보통 PRD·WBS의 앞단 산출물이므로, 필요하면 "이 IA로 PRD�
   - `sheet_name`: 시트 탭 이름. `title`: 제목줄에 들어갈 문구.
   - `roles`: (Admin 시트) 권한 역할 목록 → 역할마다 C/R/U/D 4칸이 생성된다.
   - `rows`: 메뉴 행. 각 행은 `depth`(1~max_depth)와 `name` 필수.
-    - `code`: 화면 코드(첫 열). 예: `"1.1"`, `"A.3.2"`, `"H.1"`.
+    - `code`: 화면 코드(첫 열). 채번 규칙: depth1=`N.0`(N은 1부터), depth2=`N.M`,
+      depth3=`N.M.K`. 공통영역은 Head=`H.0`(하위 `H.1`...), Footer=`F.0`(하위 `F.1`...).
+      Admin 시트는 `A.` 접두(`A.1.0`, `A.1.1`...). 예: `"1.0"`, `"2.1"`, `"A.3.2"`, `"H.1"`.
     - 선택: `tab` `page_def` `detail` `note` 텍스트, `page` 숫자.
     - `dev`: 개발구분 배열. `"디자인"` `"퍼블리싱"` `"개발"` 중 해당하는 것 → ● 표시.
     - `auth`: 역할별 권한. `{"역할명": "CRUD부분집합"}` 형태. 예: `"R"`(조회만),

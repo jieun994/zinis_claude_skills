@@ -73,34 +73,40 @@ description: >
 사용자가 기획서·일정 메모를 **첨부하거나 붙여넣어** 주면 먼저 읽어 초안에 반영한다.
 (없으면 개요만으로 분해한다)
 
-### 3. 작업 트리 구성 — 레벨별로 단계적으로 (★ 한 번에 다 묻지 않는다)
+### 2. 작업 트리 구성 — 레벨별로 단계적으로 (★ 한 번에 다 묻지 않는다)
 작업 전체를 한꺼번에 받지 말고, **레벨을 나눠 "제안 → 확인"을 반복**한다. 각
 단계는 한 레벨만 짧게 보여줘 사용자 부담을 줄인다. 매 단계 제가 개요·관행 기반으로
 **초안을 먼저 제안**하고, 사용자는 추가/삭제/수정만 한다.
 
-- **(B) L2 제안** — 0단계에서 고른 L1(고정 8종 중 선택분)마다 중분류(L2) 초안을
+- **(A) L2 제안** — 0단계에서 고른 L1(고정 8종 중 선택분)마다 중분류(L2) 초안을
   표로 제시 → 사용자가 수정·확정. **이때 L3·일정은 묻지 않는다.**
-- **(C) L3 제안** — L2 확정 후, 각 L2의 세부작업(L3)을 제시 → 수정·확정.
-  (상세수준이 "L2까지"면 이 단계 생략, "대분류만"이면 B·C 모두 생략)
-- **(D) 일정·담당자** — 확정된 **말단 작업**에 시작/종료일·담당자(·필요 시 진척율)를
+- **(B) L3 제안** — L2 확정 후, 각 L2의 세부작업(L3)을 제시 → 수정·확정.
+  (상세수준이 "L2까지"면 이 단계 생략, "대분류만"이면 A·B 모두 생략)
+- A·B의 표준 구성은 `references/task-catalog.md`를 참조해 서비스에 맞게 가감한다.
+  ("알아서 해줘"면 카탈로그 표준 구성이 기본값)
+- **(C) 일정·담당자** — 확정된 **말단 작업**에 시작/종료일·담당자(·필요 시 진척율)를
   제안 → 수정. 상위(L1/L2)에는 작업량·일정을 넣지 않는다(자동 합산/자동 계산).
+
+기간 배분 기본값: 기획 15~20% → 디자인 20%(기획 후반과 중첩 가능) →
+퍼블리싱·개발 40%(병행) → 테스트 15% → 오픈·안정화 10%. 프로젝트 관리는 전체 기간.
+모든 작업 일정은 project.start~end 안이어야 한다.
 
 한 단계라도 사용자가 "알아서 해줘"라고 하면 합리적 기본으로 채우되, 생성 직전
 전체 트리를 한 번 더 표로 보여주고 최종 확인을 받는다. 임의 확정 금지.
 
-### 4. JSON 작성 후 스크립트 실행
+### 3. JSON 작성 후 스크립트 실행
 > 아래 명령은 Claude가 대신 실행한다 — 사용자가 직접 입력할 필요 없다.
 ```
-cd skills/wbs-generator
-PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python scripts/build_wbs.py <입력.json> <출력.xlsx> template/WBS_template.xlsx
+PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python "${CLAUDE_PLUGIN_ROOT}/scripts/build_wbs.py" <입력.json> <출력.xlsx> "${CLAUDE_PLUGIN_ROOT}/template/WBS_template.xlsx"
 ```
-(Windows PowerShell에서는: `$env:PYTHONIOENCODING="utf-8"; $env:PYTHONUTF8="1"; python scripts/build_wbs.py <입력.json> <출력.xlsx> template/WBS_template.xlsx`)
+(Windows PowerShell에서는: `$env:PYTHONIOENCODING="utf-8"; $env:PYTHONUTF8="1"; python "$env:CLAUDE_PLUGIN_ROOT/scripts/build_wbs.py" <입력.json> <출력.xlsx> "$env:CLAUDE_PLUGIN_ROOT/template/WBS_template.xlsx"`)
+`${CLAUDE_PLUGIN_ROOT}` 변수가 없으면(로컬 실행) 이 SKILL.md가 있는 폴더를 기준으로 경로를 잡는다.
 출력 파일명은 `프로젝트명_WBS_YYYYMMDD.xlsx` 식으로.
 - 사전 요구: `pip install openpyxl holidays`
 - 템플릿은 원본 WBS 샘플에서 파생한다. 다시 만들려면:
-  `python scripts/make_template.py <원본_WBS샘플.xlsx> template/WBS_template.xlsx`
+  `python "${CLAUDE_PLUGIN_ROOT}/scripts/make_template.py" <원본_WBS샘플.xlsx> "${CLAUDE_PLUGIN_ROOT}/template/WBS_template.xlsx"`
 
-### 5. 결과 안내
+### 4. 결과 안내
 생성 경로를 알려주고 "엑셀에서 열면 진척률·간트차트·공휴일이 자동으로 보인다"고 안내.
 
 ## 입력 JSON 구조
@@ -122,6 +128,9 @@ PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python scripts/build_wbs.py <입력.json> <�
   ]
 }
 ```
+- ★ **tasks는 엑셀에 찍히는 순서 그대로 나열한다(전위순회).** 각 L2는 소속 L1
+  바로 뒤에, 각 L3는 소속 L2 뒤에 연속 배치. 레벨은 1씩만 내려간다
+  (L1 다음에 L3 직행 금지).
 - **L3(말단)에는 `시작일·종료일·진척율·상태`만 준다.** 총/목표/실 작업량과
   목표진척율은 엑셀 수식으로 자동 계산되므로 입력하지 않는다.
 - L1·L2는 `level·name`(+선택 담당자)만. 작업량·진척율은 자동(하위 합산/비율).

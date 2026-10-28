@@ -81,6 +81,34 @@ def networkdays(start, end, hol):
     return n
 
 
+def validate_levels(tasks):
+    """레벨 순서 검증: 전위순회 순서(레벨은 1씩만 내려감), 첫 작업은 L1."""
+    prev = 0
+    for i, t in enumerate(tasks):
+        cur = int(t.get("level", 1))
+        name = t.get("name", "")
+        if i == 0 and cur != 1:
+            raise SystemExit(f"1번째 작업 '{name}': 첫 작업은 L1이어야 함 (L{cur}로 시작)")
+        if cur > prev + 1:
+            raise SystemExit(f"{i+1}번째 작업 '{name}': 레벨이 건너뜀 (L{prev} 다음에 L{cur})")
+        prev = cur
+
+
+def normalize_progress(tasks):
+    """진척율 보정: '85%' 문자열 허용, 1 초과 값은 100으로 나눠 0~1로 해석."""
+    for i, t in enumerate(tasks):
+        v = t.get("진척율")
+        if v is None or v == "":
+            continue
+        if isinstance(v, str):
+            v = v.strip().rstrip("%").strip()
+        v = float(v)
+        if v > 1:
+            print(f"  [주의] {FIRST_ROW + i}행 진척율 {v:g} → {v / 100:g}로 해석")
+            v = v / 100
+        t["진척율"] = v
+
+
 def compute_structure(tasks, hol):
     """직속 자식·부모 일정(min/max)·상태 추정값 계산. (실제 셀은 수식으로 들어감)"""
     n = len(tasks)
@@ -167,6 +195,9 @@ def build(input_json, output_xlsx, template_xlsx):
     if not start or not end:
         raise SystemExit("project.start / project.end (시작일·종료일) 필수.")
 
+    validate_levels(tasks)
+    normalize_progress(tasks)
+
     # 공휴일 먼저 계산 (총작업량=진행일 계산에 필요)
     hol = data.get("holidays")
     if hol:
@@ -177,6 +208,15 @@ def build(input_json, output_xlsx, template_xlsx):
     hol_set = set(d.date() for d, _ in pairs)
 
     compute_structure(tasks, hol_set)
+
+    # 작업 일정이 프로젝트 기간(start~end)을 벗어나면 경고 (중단하지 않음)
+    for i, t in enumerate(tasks):
+        for d in (t.get("_start"), t.get("_end")):
+            if d and not (start <= d <= end):
+                print(f"  [경고] {FIRST_ROW + i}행 '{t.get('name', '')}' "
+                      f"일정({d:%Y-%m-%d})이 프로젝트 기간"
+                      f"({start:%Y-%m-%d}~{end:%Y-%m-%d})을 벗어남")
+                break
 
     wb = openpyxl.load_workbook(template_xlsx)
     ws = wb["WBS"]

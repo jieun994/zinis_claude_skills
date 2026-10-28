@@ -3,9 +3,9 @@
 IA(사이트 구조 및 기능정의) 엑셀 생성 스크립트.
 
 입력 JSON으로 받은 메뉴 트리를 엑셀 정보구조도/기능정의서로 만든다.
-스타일은 wbs-generator 샘플의 디자인 언어를 따른다:
-  - 컬럼 헤더 = 검정 배경 + 흰 글씨 / 그룹 헤더 = 진회색
-  - 행 색: Depth1=진회색(흰글씨) · Depth2=연노랑 · Depth3+=흰색
+스타일은 모던 네이비 톤을 따른다:
+  - 타이틀 밴드·컬럼 헤더 = 네이비 배경 + 흰 글씨 / 그룹 헤더 = 슬레이트 회색
+  - 본문 행 = 흰 배경 기본 + 옅은 지브라 줄무늬, Depth1 행은 굵게 + 위 구분선
   - 폰트 Malgun Gothic, 얇은 회색 테두리
 시트 구성: 표지 → 사용안내 → 개정이력 → (Front/Admin 등) IA 시트들.
 
@@ -55,6 +55,7 @@ OPT_LABELS = {
     "note": "비고",
 }
 DEV_KEYS = ["디자인", "퍼블리싱", "개발"]
+VALID_COLS = {"tab", "page_def", "detail", "page", "dev_split"}   # columns 허용 키
 OPS = ["C", "R", "U", "D"]          # 권한 CRUD
 GRP, HDR, FIRST = 3, 4, 5   # 그룹헤더 / 컬럼헤더 / 데이터 시작 행
 
@@ -230,11 +231,11 @@ def render_ia_sheet(ws, sheet, project, default_cols, max_depth):
                 if dk in dev:
                     cell.value = "●"
                     cell.font = Font(name=FONT, size=9, color=C_ACCENT)
-            # 권한 CRUD — 허용은 ✓(포인트색), 미허용은 연회색 셀
+            # 권한 CRUD — 허용은 O(포인트색), 미허용은 연회색 셀
             if key.startswith("auth_"):
                 rn, op = key[5:].rsplit("_", 1)
                 if op in allowed_by_role.get(rn, set()):
-                    cell.value = "✓"
+                    cell.value = "O"
                     cell.font = Font(name=FONT, size=9, bold=True, color=C_ACCENT)
                 elif not phase2:
                     cell.fill = fill(C_XCELL)
@@ -416,6 +417,29 @@ def make_revision(ws, project):
 
 
 # =====================================================================
+def validate_input(default_cols, sheets):
+    """columns 허용 키 검증(위반 시 중단) + auth 역할명 검증(경고만)."""
+    # columns 키 검증 — 벗어난 키가 있으면 중단
+    unknown = [c for c in default_cols if c not in VALID_COLS]
+    if unknown:
+        raise SystemExit(
+            f"columns에 알 수 없는 키: {unknown} (허용: {sorted(VALID_COLS)})")
+    for sheet in sheets:
+        sname = sheet.get("sheet_name") or sheet.get("title") or "IA"
+        unknown = [c for c in sheet.get("columns", []) if c not in VALID_COLS]
+        if unknown:
+            raise SystemExit(
+                f"'{sname}' 시트 columns에 알 수 없는 키: {unknown} "
+                f"(허용: {sorted(VALID_COLS)})")
+        # auth 역할명 검증 — roles에 없는 역할은 칸이 안 생기므로 경고
+        roles = sheet.get("roles", [])
+        for i, row in enumerate(sheet.get("rows", []), start=1):
+            for rn in (row.get("auth") or {}):
+                if rn not in roles:
+                    print(f"[경고] '{sname}' 시트 {i}행 auth 역할 '{rn}'는 "
+                          f"roles에 없음 — 해당 칸이 비게 됩니다")
+
+
 def build(input_json, output_xlsx):
     with open(input_json, encoding="utf-8") as f:
         data = json.load(f)
@@ -425,6 +449,7 @@ def build(input_json, output_xlsx):
     sheets = data.get("sheets", [])
     if not sheets:
         raise SystemExit("sheets 가 비어 있습니다. 최소 1개 시트가 필요합니다.")
+    validate_input(default_cols, sheets)
     doc_type = data.get("doc_type") or sheets[0].get("title") or "정보구조도(IA)"
 
     wb = openpyxl.Workbook()

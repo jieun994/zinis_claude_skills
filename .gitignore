@@ -1,4 +1,17 @@
+# 회사 원본 자료 — 배포 금지 (실제 프로젝트 데이터 포함)
+_inputs/
+
+# 루트에 생성된 테스트 WBS 결과물
+/*.xlsx
+
+# 파이썬/엑셀 임시 파일
 __pycache__/
 *.pyc
 ~$*
 .DS_Store
+
+# Claude 로컬 설정
+.claude/settings.local.json
+
+# 테스트 결과물
+_output/

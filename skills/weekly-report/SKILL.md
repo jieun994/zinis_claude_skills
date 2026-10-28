@@ -26,8 +26,8 @@ description: This skill should be used when the user asks to create a weekly wor
 **타입**: prompt
 
 지난주 보고서 PPT 경로를 받는다. 사용자가 첨부/경로를 주면 그것을 `base_file`로 쓴다. 첫 주거나 파일이 없으면 내장 템플릿을 베이스로 안내한다:
-- W1: `assets/W1_blank.pptx`
-- W2: `assets/W2_blank.pptx`
+- W1: `${CLAUDE_PLUGIN_ROOT}/assets/W1_blank.pptx`
+- W2: `${CLAUDE_PLUGIN_ROOT}/assets/W2_blank.pptx`
 
 ### Step 3 — 지난주 값 읽기 (이어받기)
 **타입**: script
@@ -35,8 +35,10 @@ description: This skill should be used when the user asks to create a weekly wor
 베이스가 지난주 실제 보고서면, 먼저 읽어서 이어받을 값을 추출한다:
 
 ```bash
-python "scripts/weekly_report.py" read "<지난주 보고서.pptx>"
+python "${CLAUDE_PLUGIN_ROOT}/scripts/weekly_report.py" read "<지난주 보고서.pptx>"
 ```
+
+Windows PowerShell에서는 `${CLAUDE_PLUGIN_ROOT}` → `$env:CLAUDE_PLUGIN_ROOT`. 이 변수가 없으면(로컬 실행) 이 SKILL.md가 있는 폴더를 기준으로 경로를 잡는다.
 
 출력 JSON에서 활용한다:
 - `cumulative_actual` — 구분별 **누적 실적**. 이번 주의 `지난주 실적` 기본값으로 제안한다.
@@ -52,7 +54,7 @@ python "scripts/weekly_report.py" read "<지난주 보고서.pptx>"
 2. **주간 실적 / 차주 계획 텍스트** — 업무구분별로 `이번주 실적`과 `차주 계획`(+관련 산출물). 여러 줄은 줄바꿈으로 구분한다.
 3. **주요 이슈** — `요청 사항`, `이슈 사항`.
 4. **지연 사유 / 캐치업 방안** (있으면).
-5. **W2일 때만** — 월간 결산: `월 전체/업무별 진척률`, `주요 성과`, `이슈 및 리스크`, `익월 목표`.
+5. **W2일 때만** — 월간 결산: 월간 진척률은 주간과 똑같이 **누적 % 4개**로 받는다(기본). 구분마다 `전월 실적` / `당월 계획` / `당월 실적` / `익월 목표`. 월간표 6칸은 스크립트가 계산하므로 직접 계산하지 않는다. 사용자가 6개 숫자(당월계획/당월실적/누적계획/누적실적/익월계획/익월누적)를 이미 갖고 있을 때만 6값을 그대로 받는다(대안). 그 외 `주요 성과`, `이슈 및 리스크`, `익월 목표` 텍스트도 수집한다.
 
 자동 판단이 가능한 것(주차 라벨, 기간, 보고 날짜)은 날짜로 채우되 사용자에게 확인받는다.
 
@@ -72,21 +74,25 @@ python "scripts/weekly_report.py" read "<지난주 보고서.pptx>"
 
 입력에 숫자가 없거나 분모가 안 맞으면 해당 칸은 `-`로 둔다(계산이 보고서 생성 전체를 막지 않는다).
 
+W2 월간표 6칸(당월계획/당월실적/누적계획/누적실적/익월계획/익월누적)도 같은 방식이다. 누적 % 4개(전월 실적/당월 계획/당월 실적/익월 목표)를 넣으면 스크립트가 대칭 공식(당월 계획 = 당월 계획 − 전월 실적, 익월 계획 = 익월 목표 − 당월 실적 등)으로 계산한다. **월간 6값을 모델이 직접 계산하지 않는다.**
+
 ### Step 6 — 보고서 생성
 **타입**: script (generate)
 
 수집한 값을 `data.json`으로 정리해 `scripts/` 옆 임시 경로에 저장한 뒤 빌드한다:
 
 ```bash
-python "scripts/weekly_report.py" build "<data.json>"
+python "${CLAUDE_PLUGIN_ROOT}/scripts/weekly_report.py" build "<data.json>"
 ```
+
+Windows PowerShell에서는 `${CLAUDE_PLUGIN_ROOT}` → `$env:CLAUDE_PLUGIN_ROOT`. 이 변수가 없으면(로컬 실행) 이 SKILL.md가 있는 폴더를 기준으로 경로를 잡는다.
 
 `data.json` 형식(값이 없는 키는 생략 가능):
 
 ```json
 {
   "mode": "W1",
-  "base_file": "지난주 보고서.pptx 또는 assets/W1_blank.pptx",
+  "base_file": "지난주 보고서.pptx 또는 ${CLAUDE_PLUGIN_ROOT}/assets/W1_blank.pptx",
   "output_file": "<프로젝트명>_주간보고서_W1_YYYYMMDD.pptx",
   "week_label": "6월 4주차",
   "report_date": "2026.06.30",
@@ -106,7 +112,7 @@ python "scripts/weekly_report.py" build "<data.json>"
   "delay": {"지연 사유": "...", "캐치업 방안": "..."},
   "monthly": {
     "month_label": "6월", "next_month": "7월", "period": "2026. 06. 15 ~ 2026. 06. 26",
-    "progress": {"전체": [7.3, 6.9, 7.3, 6.9, 23.6, 30.9]},
+    "progress": {"전체": {"prev_month_actual": 0, "month_plan": 7.3, "month_actual": 6.9, "next_month_plan": 30.9}},
     "performance": {"기획": {"text": "...", "note": "..."}},
     "issues": [{"issue": "...", "impact": "...", "action": "..."}],
     "goals": {"개발": {"text": "...", "note": "..."}}
@@ -115,8 +121,10 @@ python "scripts/weekly_report.py" build "<data.json>"
 ```
 
 - `progress`/`tasks`의 구분 키는 베이스 표의 구분명과 느슨하게 매칭된다(괄호·공백 차이 허용). `read`의 `task_units`를 그대로 쓰면 안전하다.
-- `mode`가 `W2`인데 베이스에 월간 결산이 없으면(예: 지난주 W1 파일) `assets/w2_monthly.pptx`의 4장을 자동으로 #Appendix 앞에 추가한 뒤 `monthly` 값을 채운다.
-- `monthly.progress`의 6개 값은 월간표 컬럼 순서(당월계획/당월실적/누적계획/누적실적/익월계획/익월누적) 그대로 들어간다.
+- `mode`가 `W2`인데 베이스에 월간 결산이 없으면(예: 지난주 W1 파일) 월간 결산 4장(`${CLAUDE_PLUGIN_ROOT}/assets/w2_monthly.pptx`)을 자동으로 #Appendix 앞에 추가한 뒤 `monthly` 값을 채운다. 경로는 스크립트가 자기 위치 기준으로 찾으므로 지정할 필요 없다.
+- `monthly.progress`는 구분마다 **누적 % 4개**(`prev_month_actual`/`month_plan`/`month_actual`/`next_month_plan`)를 넣는 방식이 기본이다. 월간표 6칸은 스크립트가 계산한다.
+- 월간표 헤더의 `(M/D 기준)` 날짜는 `actual_basis` 값으로 자동 치환된다(예: `06월 26일` → `(6/26 기준)`). `actual_basis`가 없으면 치환하지 않고 템플릿 값이 그대로 남는다.
+- 하위 호환: 사용자가 6개 숫자를 이미 갖고 있으면 6값 리스트(예: `"전체": [7.3, 6.9, 7.3, 6.9, 24.0, 30.9]`)를 그대로 넣어도 된다. 이때는 월간표 컬럼 순서(당월계획/당월실적/누적계획/누적실적/익월계획/익월누적) 그대로 들어간다.
 
 빌드 후 출력 경로와 "이번주 누적 진척률 N%"를 안내한다.
 
@@ -135,7 +143,7 @@ python "scripts/weekly_report.py" build "<data.json>"
 | 설정 | 기본값 | 변경 방법 |
 |------|--------|-----------|
 | 양식 버전 | 날짜로 W1/W2 추천 | Step 1에서 사용자가 선택 |
-| 베이스 파일 | 지난주 보고서 복사 | 없으면 `assets/W{1,2}_blank.pptx` |
+| 베이스 파일 | 지난주 보고서 복사 | 없으면 `${CLAUDE_PLUGIN_ROOT}/assets/W{1,2}_blank.pptx` |
 | 출력 파일명 | `<프로젝트명>_주간보고서_<W1\|W2>_<YYYYMMDD>.pptx` | data.json의 `output_file` |
 | 진척률 표기 | 소수 첫째자리(예: 5.2%) | 스크립트 고정 |
 
@@ -150,5 +158,5 @@ python "scripts/weekly_report.py" build "<data.json>"
 ## 핵심 원칙
 
 - **양식을 건드리지 않는다**: 베이스 PPT의 서식·레이아웃·간트는 그대로 두고, 값이 바뀌는 셀만 교체한다.
-- **계산은 스크립트에 맡긴다**: 진척률 6칸은 `build`가 계산한다. 직접 암산해 넣지 않는다(불일치 방지).
+- **계산은 스크립트에 맡긴다**: 주간 진척률 6칸과 W2 월간표 6칸 모두 `build`가 누적 % 4개에서 계산한다. 직접 암산해 넣지 않는다(불일치 방지).
 - **모르면 비운다**: 입력이 없는 칸은 지어내지 말고 비운 채로 두고 사용자에게 알린다.
